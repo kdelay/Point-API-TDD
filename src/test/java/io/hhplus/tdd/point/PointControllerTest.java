@@ -1,0 +1,74 @@
+package io.hhplus.tdd.point;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.hhplus.tdd.point.service.PointService;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(controllers = PointController.class)
+@AutoConfigureMockMvc
+class PointControllerTest {
+
+    @Autowired
+    public MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockBean
+    private PointService pointService;
+
+    // /point/{id}/charge
+    @Test
+    @DisplayName("PATCH 포인트 충전(아이디 O)")
+    void chargeTest_isExistsId() throws Exception {
+
+        long id = 1L;
+        long amount = 100L;
+        UserPoint mockUserPoint = new UserPoint(id, amount, System.currentTimeMillis());
+
+        // mocking
+        when(pointService.charge(anyLong(), anyLong())).thenReturn(mockUserPoint);
+
+        //JSON 형식으로 변환된 amount를 전달
+        String jsonContent = objectMapper.writeValueAsString(amount);
+
+        mockMvc.perform(patch("/point/{id}/charge", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonContent))
+                .andExpect(status().isOk()) //200 response
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.point").value(amount));
+    }
+
+    @Test
+    @DisplayName("PATCH 포인트 충전(아이디 X)")
+    void chargeTest_isEmptyId() throws Exception {
+        long userId = -1L; //Invalid ID
+        long amount = 100L;
+
+        //mocking
+        given(pointService.charge(userId, amount)).willThrow(new IllegalArgumentException("아이디가 존재하지 않습니다."));
+
+        //JSON 형식으로 변환된 amount를 전달
+        String jsonContent = objectMapper.writeValueAsString(amount);
+
+        mockMvc.perform(patch("/point/{id}/charge", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonContent))
+                .andExpect(status().isInternalServerError());
+    }
+}
