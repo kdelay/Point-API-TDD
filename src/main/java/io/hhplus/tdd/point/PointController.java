@@ -19,7 +19,7 @@ public class PointController {
     public UserPoint point(
             @PathVariable long id
     ) {
-        return new UserPoint(0, 0, 0);
+        return new UserPoint(1, 0, 0);
     }
 
     /**
@@ -51,6 +51,6 @@ public class PointController {
             @PathVariable long id,
             @RequestBody long amount
     ) {
-        return new UserPoint(0, 0, 0);
+        return new UserPoint(1, 0, 0);
     }
 }
