@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @AutoConfigureMockMvc
@@ -40,6 +41,8 @@ public class PointServiceTest {
         mocks.close();
     }
 
+    // -------------------------------------------------------------------------
+
     @Test
     @DisplayName("아이디가 없는 경우")
     void isEmptyId() {
@@ -60,6 +63,8 @@ public class PointServiceTest {
     private void getUserPoint(long id, long amount) {
         when(userPointTable.selectById(id)).thenReturn(new UserPoint(id, amount, System.currentTimeMillis()));
     }
+
+    // -------------------------------------------------------------------------
 
     //포인트 충전 - charge
     //실패 TC
@@ -97,5 +102,58 @@ public class PointServiceTest {
         UserPoint userPoint = pointService.charge(id, chargeAmount);
 
         assertThat(userPoint.point()).isEqualTo(base + chargeAmount);
+    }
+
+    // -------------------------------------------------------------------------
+
+    //포인트 사용 - use
+    //실패 TC
+    @Test
+    @DisplayName("잔여 포인트보다 많은 포인트를 사용하려고 할 때") //사용 포인트 > 잔여 포인트
+    void usePointsGreaterThanBalanceTest() {
+        //사용자 포인트 설정
+        long id = 1L;
+        long base = 100L;
+        getUserPoint(id, base);
+
+        //mocking
+        long useAmount = 150L;
+        when(userPointTable.insertOrUpdate(eq(id), eq(useAmount))).thenThrow(IllegalArgumentException.class);
+
+        //exception 발생 검증
+        assertThatThrownBy(() -> pointService.use(id, useAmount))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("잔여 포인트보다 많이 사용할 수 없습니다.");
+
+        //잔여 포인트는 변하지 않아야 된다.
+        assertThat(userPointTable.selectById(id).point()).isEqualTo(base);
+    }
+
+    //성공 TC
+    @Test
+    @DisplayName("잔여 포인트보다 적은 포인트를 사용하려고 할 때") //사용 포인트 < 잔여 포인트
+    void usePointsLessThanBalanceTest() {
+        //사용자 포인트 설정
+        long id = 1L;
+        long base = 100L;
+        getUserPoint(id, base);
+
+        //mocking
+        long useAmount = 50L;
+        when(userPointTable.insertOrUpdate(eq(id), eq(useAmount))).thenAnswer(invocationOnMock -> {
+           long inId = invocationOnMock.getArgument(0);
+           long inAmount = invocationOnMock.getArgument(1);
+
+           //포인트 변경
+           long curAmount = userPointTable.selectById(inId).point();
+           long updateAmount = curAmount - inAmount;
+           return new UserPoint(inId, updateAmount, System.currentTimeMillis());
+        });
+
+        //포인트 사용
+        UserPoint userPoint = pointService.use(id, useAmount);
+
+        //잔여 포인트 검증
+        assertThat(userPoint.point()).isEqualTo(base - useAmount);
     }
 }

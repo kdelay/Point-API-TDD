@@ -16,6 +16,7 @@ public class PointService {
     }
 
     public UserPoint charge(long id, long amount) {
+        //TODO function isValidId(id)
         UserPoint userPoint = userPointTable.selectById(id);
         if (userPoint == null || userPoint.id() == -1) {
             throw new IllegalArgumentException("아이디가 존재하지 않습니다.");
@@ -27,6 +28,14 @@ public class PointService {
     }
 
     public UserPoint use(long id, long amount) {
-        return null;
+        UserPoint userPoint = userPointTable.selectById(id);
+        if (userPoint == null || userPoint.id() == -1) {
+            throw new IllegalArgumentException("아이디가 존재하지 않습니다.");
+        }
+
+        long updateAmount = userPoint.point() - amount;
+        if (updateAmount < 0) throw new IllegalArgumentException("잔여 포인트보다 많이 사용할 수 없습니다.");
+
+        return userPointTable.insertOrUpdate(id, updateAmount);
     }
 }
