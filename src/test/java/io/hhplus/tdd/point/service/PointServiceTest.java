@@ -66,6 +66,21 @@ public class PointServiceTest {
 
     // -------------------------------------------------------------------------
 
+    //포인트 조회
+    //성공 TC
+    @Test
+    @DisplayName("포인트 조회 성공 케이스")
+    void selectSuccess() {
+        //사용자 포인트 설정
+        long id = 1L;
+        long amount = 100L;
+        getUserPoint(id, amount);
+
+        assertThat(pointService.select(id).point()).isEqualTo(amount);
+    }
+
+    // -------------------------------------------------------------------------
+
     //포인트 충전 - charge
     //실패 TC
     @Test
