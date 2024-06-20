@@ -15,6 +15,12 @@ public class UserPointTable {
 
     private final Map<Long, UserPoint> table = new HashMap<>();
 
+    public UserPointTable() {
+        // 초기 데이터 설정
+        table.put(1L, new UserPoint(1L, 100L, System.currentTimeMillis()));
+        table.put(2L, new UserPoint(2L, 50L, System.currentTimeMillis()));
+    }
+
     public UserPoint selectById(Long id) {
         throttle(200);
         return table.getOrDefault(id, UserPoint.empty(id));
