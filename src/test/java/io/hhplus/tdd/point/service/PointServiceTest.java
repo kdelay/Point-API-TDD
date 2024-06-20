@@ -10,10 +10,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 public class PointServiceTest {
@@ -102,6 +100,39 @@ public class PointServiceTest {
 
         //기존 금액에 충전한 금액이 충전되어있어야 한다.
         assertThat(userPoint.point()).isEqualTo(base + chargeAmount);
+    }
+
+    @Test
+    @DisplayName("포인트 충전 + 사용 실패")
+    void chargeAndUseFailTest() {
+
+        //사용자 1에 대한 포인트 정보 생성
+        long id = 1L;
+        long base = 50L;
+        getUserPoint(id, base);
+
+        //when
+        when(userPointTable.insertOrUpdate(anyLong(), longThat(amount -> amount > 0))).thenAnswer(invocationOnMock -> {
+            long inId = invocationOnMock.getArgument(0);
+            long inAmount = invocationOnMock.getArgument(1);
+            return new UserPoint(inId, inAmount, System.currentTimeMillis());
+        });
+
+        //포인트 충전 시도
+        long chargeAmount = 100L;
+        long amountAfterCharge = pointService.charge(id, chargeAmount).point();
+
+        //포인트 충전이 잘 되었는지 검증
+        assertThat(amountAfterCharge).isEqualTo(base + chargeAmount);
+
+        //충전된 포인트 저장
+        getUserPoint(id, amountAfterCharge);
+
+        //잔여 포인트보다 많이 사용할 수 없다.
+        long useAmount = 200L;
+        assertThatThrownBy(() -> pointService.use(id, useAmount))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("잔여 포인트보다 많이 사용할 수 없습니다.");
     }
 
     // -------------------------------------------------------------------------
