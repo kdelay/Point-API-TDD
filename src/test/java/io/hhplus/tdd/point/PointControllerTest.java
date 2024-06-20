@@ -2,6 +2,9 @@ package io.hhplus.tdd.point;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.hhplus.tdd.database.PointHistoryTable;
+import io.hhplus.tdd.point.controller.PointController;
+import io.hhplus.tdd.point.repository.PointHistory;
+import io.hhplus.tdd.point.repository.UserPoint;
 import io.hhplus.tdd.point.service.PointService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,7 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
-import static io.hhplus.tdd.point.TransactionType.CHARGE;
+import static io.hhplus.tdd.point.repository.TransactionType.CHARGE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;

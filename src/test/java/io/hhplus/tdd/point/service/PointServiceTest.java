@@ -2,9 +2,9 @@ package io.hhplus.tdd.point.service;
 
 import io.hhplus.tdd.database.PointHistoryTable;
 import io.hhplus.tdd.database.UserPointTable;
-import io.hhplus.tdd.point.PointHistory;
-import io.hhplus.tdd.point.TransactionType;
-import io.hhplus.tdd.point.UserPoint;
+import io.hhplus.tdd.point.repository.PointHistory;
+import io.hhplus.tdd.point.repository.TransactionType;
+import io.hhplus.tdd.point.repository.UserPoint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,8 +15,8 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.List;
 
-import static io.hhplus.tdd.point.TransactionType.CHARGE;
-import static io.hhplus.tdd.point.TransactionType.USE;
+import static io.hhplus.tdd.point.repository.TransactionType.CHARGE;
+import static io.hhplus.tdd.point.repository.TransactionType.USE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;

@@ -2,15 +2,15 @@ package io.hhplus.tdd.point.service;
 
 import io.hhplus.tdd.database.PointHistoryTable;
 import io.hhplus.tdd.database.UserPointTable;
-import io.hhplus.tdd.point.PointHistory;
-import io.hhplus.tdd.point.UserPoint;
+import io.hhplus.tdd.point.repository.PointHistory;
+import io.hhplus.tdd.point.repository.UserPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-import static io.hhplus.tdd.point.TransactionType.CHARGE;
-import static io.hhplus.tdd.point.TransactionType.USE;
+import static io.hhplus.tdd.point.repository.TransactionType.CHARGE;
+import static io.hhplus.tdd.point.repository.TransactionType.USE;
 
 @Service
 public class PointService {
