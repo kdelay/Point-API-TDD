@@ -30,11 +30,6 @@ public class PointService {
     }
 
     public UserPoint select(long id) {
-        //TODO function isValidId(id)
-        UserPoint userPoint = userPointTable.selectById(id);
-        if (userPoint == null || userPoint.id() == -1) {
-            throw new IllegalArgumentException("아이디가 존재하지 않습니다.");
-        }
-        return userPoint;
+        return userPointTable.selectById(id);
     }
 }

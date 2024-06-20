@@ -16,7 +16,7 @@ public class PointController {
     private static final Logger log = LoggerFactory.getLogger(PointController.class);
     private final PointService pointService;
 
-     //특정 유저의 포인트를 조회하는 기능
+    //특정 유저의 포인트를 조회하는 기능
     @GetMapping("{id}")
     public UserPoint point(
             @PathVariable long id
