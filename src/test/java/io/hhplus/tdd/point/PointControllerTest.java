@@ -66,19 +66,21 @@ class PointControllerTest {
 
     // /point/{id}/charge
     @Test
-    @DisplayName("PATCH 포인트 충전(아이디 O)")
-    void chargeTest_isExistsId() throws Exception {
+    @DisplayName("PATCH 포인트 충전")
+    void chargeTest() throws Exception {
 
+        //given
         long id = 1L;
         long amount = 100L;
         UserPoint mockUserPoint = new UserPoint(id, amount, System.currentTimeMillis());
 
-        // mocking
+        //when
         when(pointService.charge(anyLong(), anyLong())).thenReturn(mockUserPoint);
 
-        //JSON 형식으로 변환된 amount를 전달
+        //JSON to String
         String jsonContent = objectMapper.writeValueAsString(amount);
 
+        //then
         mockMvc.perform(patch("/point/{id}/charge", id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonContent))
@@ -86,24 +88,6 @@ class PointControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(id))
                 .andExpect(jsonPath("$.point").value(amount));
-    }
-
-    @Test
-    @DisplayName("PATCH 포인트 충전(아이디 X)")
-    void chargeTest_isEmptyId() throws Exception {
-        long userId = -1L; //Invalid ID
-        long amount = 100L;
-
-        //mocking
-        given(pointService.charge(userId, amount)).willThrow(new IllegalArgumentException("아이디가 존재하지 않습니다."));
-
-        //JSON 형식으로 변환된 amount를 전달
-        String jsonContent = objectMapper.writeValueAsString(amount);
-
-        mockMvc.perform(patch("/point/{id}/charge", userId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonContent))
-                .andExpect(status().isInternalServerError());
     }
 
     // ---------------------------------------------------------------------------

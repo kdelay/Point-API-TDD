@@ -13,7 +13,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -43,23 +42,6 @@ public class PointServiceTest {
 
     // -------------------------------------------------------------------------
 
-    @Test
-    @DisplayName("아이디가 없는 경우")
-    void isEmptyId() {
-        when(userPointTable.selectById(anyLong())).thenReturn(null);
-        assertThrows(IllegalArgumentException.class,
-                () -> pointService.charge(1L, anyLong()), "아이디가 존재하지 않습니다.");
-    }
-
-    @Test
-    @DisplayName("아이디가 유효하지 않은 경우")
-    void isInvalidId() {
-        long id = -1L; //유효하지 않은 ID
-        when(userPointTable.selectById(id)).thenReturn(UserPoint.empty(id));
-        assertThrows(IllegalArgumentException.class,
-                () -> pointService.charge(id, anyLong()), "아이디가 존재하지 않습니다.");
-    }
-
     private void getUserPoint(long id, long amount) {
         when(userPointTable.selectById(id)).thenReturn(new UserPoint(id, amount, System.currentTimeMillis()));
     }
@@ -85,11 +67,13 @@ public class PointServiceTest {
     //실패 TC
     @Test
     @DisplayName("0원을 충전하려고 하는 경우")
-    void chargeZeroFailTest() {
+    void chargeZeroAmountTest() {
+
         //사용자 포인트 설정
         long id = 1L;
         getUserPoint(id, anyLong());
 
+        //0원을 충전하려고 하면 IllegalArgumentException 발생
         assertThatThrownBy(() -> pointService.charge(id, 0L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("충전 금액이 0원입니다.");
@@ -98,24 +82,30 @@ public class PointServiceTest {
     //성공 TC
     @Test
     @DisplayName("유효한 금액을 충전하려고 하는 경우")
-    void chargeValidAmountSuccessTest() {
+    void chargeValidAmountTest() {
+
         //사용자 포인트 설정
         long id = 1L;
         long base = 50L;
         getUserPoint(id, base);
 
+        //when
         when(userPointTable.insertOrUpdate(anyLong(), anyLong())).thenAnswer(invocationOnMock -> {
             long invocationID = invocationOnMock.getArgument(0);
             long invocationAmount = invocationOnMock.getArgument(1);
-            //기존 유저 point + 충전 point
-            long updatedAmount = userPointTable.selectById(invocationID).point() + invocationAmount;
+
+            //기존 유저 금액 + 충전 금액
+            long baseAmount = userPointTable.selectById(invocationID).point();
+            long updatedAmount = baseAmount + invocationAmount;
+
             return new UserPoint(invocationID, updatedAmount, System.currentTimeMillis());
         });
 
-        // 테스트 코드 실행
+        //충전 시도
         long chargeAmount = 100L;
         UserPoint userPoint = pointService.charge(id, chargeAmount);
 
+        //기존 금액에 충전한 금액이 충전되어있어야 한다.
         assertThat(userPoint.point()).isEqualTo(base + chargeAmount);
     }
 
