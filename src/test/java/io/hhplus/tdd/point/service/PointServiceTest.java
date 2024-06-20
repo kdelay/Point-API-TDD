@@ -1,6 +1,9 @@
 package io.hhplus.tdd.point.service;
 
+import io.hhplus.tdd.database.PointHistoryTable;
 import io.hhplus.tdd.database.UserPointTable;
+import io.hhplus.tdd.point.PointHistory;
+import io.hhplus.tdd.point.TransactionType;
 import io.hhplus.tdd.point.UserPoint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,9 +13,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import static org.assertj.core.api.Assertions.*;
+import java.util.List;
+
+import static io.hhplus.tdd.point.TransactionType.CHARGE;
+import static io.hhplus.tdd.point.TransactionType.USE;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class PointServiceTest {
 
@@ -21,6 +29,9 @@ public class PointServiceTest {
 
     @Mock
     private UserPointTable userPointTable;
+
+    @Mock
+    private PointHistoryTable pointHistoryTable;
 
     private AutoCloseable mocks;
 
@@ -57,6 +68,56 @@ public class PointServiceTest {
 
         //유저 정보에 담긴 포인트 검증
         assertThat(pointService.select(id).point()).isEqualTo(amount);
+    }
+
+    // -------------------------------------------------------------------------
+
+    //포인트 충전/이용 내역 조회
+    @Test
+    @DisplayName("포인트 히스토리 조회")
+    void getPointHistoryTest() {
+        // given
+        long userId = 1L;
+        PointHistory history1 = new PointHistory(1L, userId, 100L, CHARGE, System.currentTimeMillis());
+        PointHistory history2 = new PointHistory(2L, userId, 50L, USE, System.currentTimeMillis());
+        List<PointHistory> expectedHistory = List.of(history1, history2);
+
+        // when
+        when(pointHistoryTable.selectAllByUserId(anyLong())).thenReturn(expectedHistory);
+
+        // then
+        List<PointHistory> pointHistory = pointService.selectPointHistory(userId);
+        assertThat(pointHistory).isEqualTo(expectedHistory);
+    }
+
+    @Test
+    @DisplayName("포인트 충전/사용할 때 포인트 히스토리에 추가되는지 검증")
+    void isInsertPointHistoryTest() {
+
+        //사용자 포인트 설정
+        long id = 1L;
+        long amount = 100L;
+        getUserPoint(id, amount);
+
+        when(pointHistoryTable.insert(eq(id), anyLong(), any(), anyLong()))
+                .thenAnswer(invocationOnMock -> {
+                    long inId = invocationOnMock.getArgument(0);
+                    long inAmount = invocationOnMock.getArgument(1);
+                    TransactionType inType = invocationOnMock.getArgument(2);
+                    long inUpdatedMills = System.currentTimeMillis();
+
+                    return new PointHistory(1L, inId, inAmount, inType, inUpdatedMills);
+                });
+
+        //포인트 충전 검증
+        pointService.charge(id, 100L);
+        verify(pointHistoryTable, times(1)).insert(eq(id), anyLong(), eq(CHARGE), anyLong());
+        pointService.charge(id, 200L);
+        verify(pointHistoryTable, times(2)).insert(eq(id), anyLong(), eq(CHARGE), anyLong());
+
+        //포인트 사용 검증
+        pointService.use(id, 100L);
+        verify(pointHistoryTable, times(1)).insert(eq(id), anyLong(), eq(USE), anyLong());
     }
 
     // -------------------------------------------------------------------------
