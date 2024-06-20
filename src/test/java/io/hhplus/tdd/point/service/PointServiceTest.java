@@ -115,13 +115,14 @@ public class PointServiceTest {
     //실패 TC
     @Test
     @DisplayName("잔여 포인트보다 많은 포인트를 사용하려고 할 때") //사용 포인트 > 잔여 포인트
-    void usePointsGreaterThanBalanceTest() {
+    void useAmountsGreaterThanBalanceTest() {
+
         //사용자 포인트 설정
         long id = 1L;
         long base = 100L;
         getUserPoint(id, base);
 
-        //mocking
+        //when
         long useAmount = 150L;
         when(userPointTable.insertOrUpdate(eq(id), eq(useAmount))).thenThrow(IllegalArgumentException.class);
 
@@ -137,28 +138,29 @@ public class PointServiceTest {
     //성공 TC
     @Test
     @DisplayName("잔여 포인트보다 적은 포인트를 사용하려고 할 때") //사용 포인트 < 잔여 포인트
-    void usePointsLessThanBalanceTest() {
+    void useAmountsLessThanBalanceTest() {
+
         //사용자 포인트 설정
         long id = 1L;
         long base = 100L;
         getUserPoint(id, base);
 
-        //mocking
+        //when
         long useAmount = 50L;
         when(userPointTable.insertOrUpdate(eq(id), eq(useAmount))).thenAnswer(invocationOnMock -> {
            long inId = invocationOnMock.getArgument(0);
            long inAmount = invocationOnMock.getArgument(1);
 
            //포인트 변경
-           long curAmount = userPointTable.selectById(inId).point();
-           long updateAmount = curAmount - inAmount;
+           long baseAmount = userPointTable.selectById(inId).point();
+           long updateAmount = baseAmount - inAmount;
            return new UserPoint(inId, updateAmount, System.currentTimeMillis());
         });
 
         //포인트 사용
         UserPoint userPoint = pointService.use(id, useAmount);
 
-        //잔여 포인트 검증
+        //잔여 포인트 -= 포인트 검증
         assertThat(userPoint.point()).isEqualTo(base - useAmount);
     }
 }
