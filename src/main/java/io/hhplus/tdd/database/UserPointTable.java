@@ -3,8 +3,7 @@ package io.hhplus.tdd.database;
 import io.hhplus.tdd.point.repository.UserPoint;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -13,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class UserPointTable {
 
-    private final Map<Long, UserPoint> table = new HashMap<>();
+    private final ConcurrentHashMap<Long, UserPoint> table = new ConcurrentHashMap<>();
 
     public UserPointTable() {
         // 초기 데이터 설정
