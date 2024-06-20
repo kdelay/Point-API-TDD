@@ -93,12 +93,7 @@ public class PointServiceTest {
         when(userPointTable.insertOrUpdate(anyLong(), anyLong())).thenAnswer(invocationOnMock -> {
             long invocationID = invocationOnMock.getArgument(0);
             long invocationAmount = invocationOnMock.getArgument(1);
-
-            //기존 유저 금액 + 충전 금액
-            long baseAmount = userPointTable.selectById(invocationID).point();
-            long updatedAmount = baseAmount + invocationAmount;
-
-            return new UserPoint(invocationID, updatedAmount, System.currentTimeMillis());
+            return new UserPoint(invocationID, invocationAmount, System.currentTimeMillis());
         });
 
         //충전 시도
