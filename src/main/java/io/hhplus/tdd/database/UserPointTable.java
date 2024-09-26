@@ -1,10 +1,9 @@
 package io.hhplus.tdd.database;
 
-import io.hhplus.tdd.point.UserPoint;
+import io.hhplus.tdd.point.repository.UserPoint;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -13,7 +12,13 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class UserPointTable {
 
-    private final Map<Long, UserPoint> table = new HashMap<>();
+    private final ConcurrentHashMap<Long, UserPoint> table = new ConcurrentHashMap<>();
+
+    public UserPointTable() {
+        // 초기 데이터 설정
+        table.put(1L, new UserPoint(1L, 100L, System.currentTimeMillis()));
+        table.put(2L, new UserPoint(2L, 50L, System.currentTimeMillis()));
+    }
 
     public UserPoint selectById(Long id) {
         throttle(200);
@@ -33,5 +38,16 @@ public class UserPointTable {
         } catch (InterruptedException ignored) {
 
         }
+    }
+
+    public long chargeAmount(long base, long amount) {
+        if (amount <= 0) throw new IllegalArgumentException("충전 금액이 0원입니다.");
+        return base + amount;
+    }
+
+    public long useAmount(long base, long amount) {
+        long updateAmount = base - amount;
+        if (updateAmount < 0) throw new IllegalArgumentException("잔여 포인트보다 많이 사용할 수 없습니다.");
+        return updateAmount;
     }
 }
