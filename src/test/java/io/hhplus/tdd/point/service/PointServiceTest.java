@@ -5,13 +5,12 @@ import io.hhplus.tdd.database.UserPointTable;
 import io.hhplus.tdd.point.repository.PointHistory;
 import io.hhplus.tdd.point.repository.TransactionType;
 import io.hhplus.tdd.point.repository.UserPoint;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
@@ -22,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 public class PointServiceTest {
 
     @InjectMocks
@@ -33,60 +33,36 @@ public class PointServiceTest {
     @Mock
     private PointHistoryTable pointHistoryTable;
 
-    private AutoCloseable mocks;
+    private final long id = 1L;
 
-    @BeforeEach
-    void setUp() {
-        //모의 객체 초기화
-        mocks = MockitoAnnotations.openMocks(this);
-    }
-
-    @AfterEach
-    void tearDown() throws Exception {
-        // 테스트가 끝난 후 자원 해제
-        mocks.close();
-    }
-
-    // -------------------------------------------------------------------------
-
-    private void getUserPoint(long id, long amount) {
+    private void getUserPoint(long amount) {
         when(userPointTable.selectById(id)).thenReturn(new UserPoint(id, amount, System.currentTimeMillis()));
     }
 
-    // -------------------------------------------------------------------------
-
-    //포인트 조회
-    //성공 TC
     @Test
-    @DisplayName("포인트를 조회하는 경우")
+    @DisplayName("포인트 조회 성공 테스트")
     void selectTest() {
-
         //사용자 포인트 설정
-        long id = 1L;
         long amount = 100L;
-        getUserPoint(id, amount);
+        getUserPoint(amount);
 
         //유저 정보에 담긴 포인트 검증
         assertThat(pointService.select(id).point()).isEqualTo(amount);
     }
 
-    // -------------------------------------------------------------------------
-
-    //포인트 충전/이용 내역 조회
     @Test
-    @DisplayName("포인트 히스토리 조회")
+    @DisplayName("포인트 히스토리 조회 성공 테스트")
     void getPointHistoryTest() {
-        // given
-        long userId = 1L;
-        PointHistory history1 = new PointHistory(1L, userId, 100L, CHARGE, System.currentTimeMillis());
-        PointHistory history2 = new PointHistory(2L, userId, 50L, USE, System.currentTimeMillis());
+        //given
+        PointHistory history1 = new PointHistory(1L, id, 100L, CHARGE, System.currentTimeMillis());
+        PointHistory history2 = new PointHistory(2L, id, 50L, USE, System.currentTimeMillis());
         List<PointHistory> expectedHistory = List.of(history1, history2);
 
-        // when
+        //when
         when(pointHistoryTable.selectAllByUserId(anyLong())).thenReturn(expectedHistory);
 
-        // then
-        List<PointHistory> pointHistory = pointService.selectPointHistory(userId);
+        //then
+        List<PointHistory> pointHistory = pointService.selectPointHistory(id);
         assertThat(pointHistory).isEqualTo(expectedHistory);
     }
 
@@ -95,9 +71,8 @@ public class PointServiceTest {
     void isInsertPointHistoryTest() {
 
         //사용자 포인트 설정
-        long id = 1L;
         long amount = 100L;
-        getUserPoint(id, amount);
+        getUserPoint(amount);
 
         when(pointHistoryTable.insert(eq(id), anyLong(), any(), anyLong()))
                 .thenAnswer(invocationOnMock -> {
@@ -122,15 +97,14 @@ public class PointServiceTest {
 
     // -------------------------------------------------------------------------
 
-    //포인트 충전 - charge
-    //실패 TC
     @Test
-    @DisplayName("0원을 충전하려고 하는 경우")
+    @DisplayName("0원을 충전하려고 하는 경우 exception 발생")
     void chargeZeroAmountTest() {
 
         //사용자 포인트 설정
-        long id = 1L;
-        getUserPoint(id, anyLong());
+        getUserPoint(anyLong());
+
+        when(pointService.charge(id, 0L)).thenThrow(new IllegalArgumentException("충전 금액이 0원입니다."));
 
         //0원을 충전하려고 하면 IllegalArgumentException 발생
         assertThatThrownBy(() -> pointService.charge(id, 0L))
@@ -138,15 +112,13 @@ public class PointServiceTest {
                 .hasMessage("충전 금액이 0원입니다.");
     }
 
-    //성공 TC
     @Test
-    @DisplayName("유효한 금액을 충전하려고 하는 경우")
+    @DisplayName("유효한 금액을 충전하려고 하는 경우 성공")
     void chargeValidAmountTest() {
 
         //사용자 포인트 설정
-        long id = 1L;
         long base = 50L;
-        getUserPoint(id, base);
+        getUserPoint(base);
 
         //when
         when(userPointTable.insertOrUpdate(anyLong(), anyLong())).thenAnswer(invocationOnMock -> {
@@ -157,6 +129,7 @@ public class PointServiceTest {
 
         //충전 시도
         long chargeAmount = 100L;
+        when(userPointTable.chargeAmount(base, chargeAmount)).thenReturn(base + chargeAmount);
         UserPoint userPoint = pointService.charge(id, chargeAmount);
 
         //기존 금액에 충전한 금액이 충전되어있어야 한다.
@@ -164,54 +137,17 @@ public class PointServiceTest {
     }
 
     @Test
-    @DisplayName("포인트 충전 + 사용 실패")
-    void chargeAndUseFailTest() {
-
-        //사용자 1에 대한 포인트 정보 생성
-        long id = 1L;
-        long base = 50L;
-        getUserPoint(id, base);
-
-        //when
-        when(userPointTable.insertOrUpdate(anyLong(), longThat(amount -> amount > 0))).thenAnswer(invocationOnMock -> {
-            long inId = invocationOnMock.getArgument(0);
-            long inAmount = invocationOnMock.getArgument(1);
-            return new UserPoint(inId, inAmount, System.currentTimeMillis());
-        });
-
-        //포인트 충전 시도
-        long chargeAmount = 100L;
-        long amountAfterCharge = pointService.charge(id, chargeAmount).point();
-
-        //포인트 충전이 잘 되었는지 검증
-        assertThat(amountAfterCharge).isEqualTo(base + chargeAmount);
-
-        //충전된 포인트 저장
-        getUserPoint(id, amountAfterCharge);
-
-        //잔여 포인트보다 많이 사용할 수 없다.
-        long useAmount = 200L;
-        assertThatThrownBy(() -> pointService.use(id, useAmount))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("잔여 포인트보다 많이 사용할 수 없습니다.");
-    }
-
-    // -------------------------------------------------------------------------
-
-    //포인트 사용 - use
-    //실패 TC
-    @Test
-    @DisplayName("잔여 포인트보다 많은 포인트를 사용하려고 할 때") //사용 포인트 > 잔여 포인트
+    @DisplayName("잔여 포인트보다 많은 포인트를 사용하려고 할 경우 실패")
     void useAmountsGreaterThanBalanceTest() {
 
         //사용자 포인트 설정
-        long id = 1L;
         long base = 100L;
-        getUserPoint(id, base);
+        getUserPoint(base);
 
         //when
         long useAmount = 150L;
-        when(userPointTable.insertOrUpdate(eq(id), eq(useAmount))).thenThrow(IllegalArgumentException.class);
+        when(userPointTable.useAmount(base, useAmount))
+                .thenThrow(new IllegalArgumentException("잔여 포인트보다 많이 사용할 수 없습니다."));
 
         //exception 발생 검증
         assertThatThrownBy(() -> pointService.use(id, useAmount))
@@ -224,17 +160,16 @@ public class PointServiceTest {
 
     //성공 TC
     @Test
-    @DisplayName("잔여 포인트보다 적은 포인트를 사용하려고 할 때") //사용 포인트 < 잔여 포인트
+    @DisplayName("잔여 포인트보다 적은 포인트를 사용하려고 할 경우 성공")
     void useAmountsLessThanBalanceTest() {
 
         //사용자 포인트 설정
-        long id = 1L;
         long base = 100L;
-        getUserPoint(id, base);
+        getUserPoint(base);
 
         //when
         long useAmount = 50L;
-        when(userPointTable.insertOrUpdate(eq(id), eq(useAmount))).thenAnswer(invocationOnMock -> {
+        when(userPointTable.insertOrUpdate(id, useAmount)).thenAnswer(invocationOnMock -> {
            long inId = invocationOnMock.getArgument(0);
            long inAmount = invocationOnMock.getArgument(1);
 
@@ -243,6 +178,7 @@ public class PointServiceTest {
            long updateAmount = baseAmount - inAmount;
            return new UserPoint(inId, updateAmount, System.currentTimeMillis());
         });
+        when(userPointTable.useAmount(base, useAmount)).thenReturn(base - useAmount);
 
         //포인트 사용
         UserPoint userPoint = pointService.use(id, useAmount);

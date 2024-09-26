@@ -28,7 +28,6 @@ public class ConcurrencyTest {
     @Test
     @DisplayName("포인트 충전 + 사용 동시성 테스트")
     void pointChargeAndUseTest() {
-
         //given
         long id = 1L;
         userPointTable.insertOrUpdate(id, 0L);
@@ -54,7 +53,6 @@ public class ConcurrencyTest {
     @Test
     @DisplayName("잔여 포인트보다 사용하려는 포인트가 많은 경우")
     void pointGreaterThanBalanceTest() {
-
         //given
         long id = 1L;
         userPointTable.insertOrUpdate(id, 100L);

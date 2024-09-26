@@ -18,19 +18,15 @@ public class PointController {
     private static final Logger log = LoggerFactory.getLogger(PointController.class);
     private final PointService pointService;
 
-    //특정 유저의 포인트를 조회하는 기능
+    //특정 유저의 포인트 조회
     @GetMapping("{id}")
-    public UserPoint point(
-            @PathVariable long id
-    ) {
+    public UserPoint point(@PathVariable long id) {
         return pointService.select(id);
     }
 
-    //특정 유저의 포인트 충전/이용 내역을 조회하는 기능을 작성해주세요.
+    //특정 유저의 포인트 충전/이용 내역을 조회하는 기능
     @GetMapping("{id}/histories")
-    public List<PointHistory> history(
-            @PathVariable long id
-    ) {
+    public List<PointHistory> history(@PathVariable long id) {
         return pointService.selectPointHistory(id);
     }
 

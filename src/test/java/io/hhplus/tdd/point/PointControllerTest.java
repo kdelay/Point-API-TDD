@@ -9,7 +9,6 @@ import io.hhplus.tdd.point.service.PointService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -18,7 +17,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static io.hhplus.tdd.point.repository.TransactionType.CHARGE;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -27,7 +25,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = PointController.class)
-@AutoConfigureMockMvc
 class PointControllerTest {
 
     @Autowired
@@ -42,11 +39,8 @@ class PointControllerTest {
     @MockBean
     private PointHistoryTable pointHistoryTable;
 
-    // ---------------------------------------------------------------------------
-
-    // /point/{id}
     @Test
-    @DisplayName("GET 포인트 조회")
+    @DisplayName("GET /point/{id} 특정 유저의 포인트 조회")
     void selectTest() throws Exception {
 
         //given
@@ -62,23 +56,20 @@ class PointControllerTest {
                 .andExpect(status().isOk());
     }
 
-    // ---------------------------------------------------------------------------
-
-    // /point/{id}/histories
     @Test
-    @DisplayName("GET 포인트 충전/이용 내역 조회")
+    @DisplayName("GET /point/{id}/histories 특정 유저의 포인트 충전/이용 내역 조회")
     void historyTest() throws Exception {
 
         //given
         long id = 1L, chargeAmount = 100L;
 
-        //포인트 내역 조회 메서드 mock
+        //when
         when(pointHistoryTable.selectAllByUserId(eq(id)))
                 .thenReturn(List.of(
                         new PointHistory(1L, id, chargeAmount, CHARGE, System.currentTimeMillis())
                 ));
 
-        //when & then
+        //then
         mockMvc.perform(get("/point/{id}/histories", id))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
@@ -86,38 +77,7 @@ class PointControllerTest {
     }
 
     @Test
-    @DisplayName("포인트 히스토리 조회")
-    void selectPointHistoryTest() {
-
-        //given
-        long id = 1L, chargeAmount = 100L;
-
-        //포인트 충전 메서드 mock
-        when(pointService.charge(eq(id), eq(chargeAmount)))
-                .thenReturn(new UserPoint(id, chargeAmount, System.currentTimeMillis()));
-
-        UserPoint charge = pointService.charge(id, chargeAmount);
-
-        //포인트 내역 조회 메서드 mock
-        when(pointHistoryTable.selectAllByUserId(eq(id)))
-                .thenReturn(List.of(
-                        new PointHistory(1L, id, chargeAmount, CHARGE, System.currentTimeMillis())
-                ));
-
-        PointHistory pointHistory = pointHistoryTable.selectAllByUserId(id).get(0);
-
-        //동일한 데이터가 들어왔는지 검증
-        assertThat(pointHistory.id()).isEqualTo(1L);
-        assertThat(pointHistory.userId()).isEqualTo(charge.id());
-        assertThat(pointHistory.amount()).isEqualTo(charge.point());
-        assertThat(pointHistory.type()).isEqualTo(CHARGE);
-    }
-
-    // ---------------------------------------------------------------------------
-
-    // /point/{id}/charge
-    @Test
-    @DisplayName("PATCH 포인트 충전")
+    @DisplayName("PATCH /point/{id}/charge 특정 유저의 포인트 충전")
     void chargeTest() throws Exception {
 
         //given
@@ -141,11 +101,8 @@ class PointControllerTest {
                 .andExpect(jsonPath("$.point").value(amount));
     }
 
-    // ---------------------------------------------------------------------------
-
-    // /point/{id}/use
     @Test
-    @DisplayName("PATCH 포인트 사용")
+    @DisplayName("PATCH /point/{id}/use 특정 유저의 포인트 사용")
     void useTest() throws Exception {
 
         //given

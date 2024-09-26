@@ -39,4 +39,15 @@ public class UserPointTable {
 
         }
     }
+
+    public long chargeAmount(long base, long amount) {
+        if (amount <= 0) throw new IllegalArgumentException("충전 금액이 0원입니다.");
+        return base + amount;
+    }
+
+    public long useAmount(long base, long amount) {
+        long updateAmount = base - amount;
+        if (updateAmount < 0) throw new IllegalArgumentException("잔여 포인트보다 많이 사용할 수 없습니다.");
+        return updateAmount;
+    }
 }
